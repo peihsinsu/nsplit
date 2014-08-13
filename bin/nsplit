@@ -1,0 +1,111 @@
+#!/usr/bin/env node
+var outfiles = {};
+var batch = 1;
+var max = 50;
+
+var Lazy = require("lazy")
+	, fs = require('fs')
+	, util = require('util')
+
+var opts = require("nomnom")
+   .option('tmp', {
+      abbr: 't',
+      help: 'Temp folder for puting processing file'
+   })
+   .option('output', {
+      abbr: 'o',
+      help: 'Output folder for puting done file'
+   })
+   .option('line', {
+      abbr: 'l',
+      help: 'Separate by size of lines'
+   })
+	 .option('callback', {
+      abbr: 'c',
+      help: 'Execute a callback script or command when every file done'
+   })
+   .option('exec', {
+      abbr: 'e',
+      help: 'Execute a script or command'
+   })
+   .option('debug', {
+      abbr: 'd',
+			flag: true,
+      help: 'Execute debug mode'
+   })
+   .option('version', {
+      flag: true,
+      help: 'print version and exit',
+      callback: function() {
+         return "version 1.2.4";
+      }
+   })
+   .parse();
+
+if(opts.debug)
+	console.log(opts);
+
+var filename = opts[0]
+
+if(!opts.output) {
+	console.log('Output folder not specify...');
+	process.exit(1);
+}
+
+if (!opts[0]) {
+  console.log('Input file not found...');
+	process.exit(1);
+} else {
+	console.log('Start to process file: %s, split every %s lines', filename, (opts.line || max));
+}
+
+function dosplit(tmp, output, filename) {
+	Lazy(fs.createReadStream(filename))
+		.lines
+		.forEach(function(line){
+			line = line.toString();
+			var tmp_file = util.format('%s/%s.%s.%s', tmp, filename, batch,'tmp');
+			var out_file = util.format('%s/%s.%s', output, filename, batch);
+
+			outfiles[tmp_file] = (outfiles[tmp_file]||0) + 1;
+			fs.appendFileSync(tmp_file, line + '\n');
+			if(outfiles[tmp_file] >= (opts.line || max)) {
+				fs.renameSync(tmp_file, out_file);
+				if(opts.callback) {
+					exec(opts.callback, function(err, stdo, stde) {
+						if(err) console.log(err);
+						if(stdo) console.log(stdo);
+						if(stde) console.log(stde);
+					});
+				}
+				console.log('Close:%s, idx:%s', tmp_file, outfiles[tmp_file]);
+				batch++;
+			}
+		}).on('pipe', function(){
+			var tmp_file = util.format('%s/%s.%s.%s', tmp, filename, batch,'tmp');
+			var out_file = util.format('%s/%s.%s', output, filename, batch);
+			if(fs.existsSync(tmp_file)) {
+				console.log('Close:%s, idx:%s', tmp_file, outfiles[tmp_file]);
+				fs.renameSync(tmp_file, out_file);
+			}
+			if(opts.exec) {
+				//close function
+				var exec = require('child_process').exec;
+				exec(opts.exec, function (error, stdout, stderr) {
+					if(error) 
+						console.log('[ERROR]', error);
+
+					if(stderr)
+						console.log('[STDERR]', stderr);
+					
+					if(stdout)
+						console.log('[STDOUT]', stdout);
+				});
+			}	
+			console.log('END....');
+		});	
+
+}
+
+if(!opts.tmp) opts.tmp = opts.output;
+dosplit(opts.tmp, opts.output, filename)

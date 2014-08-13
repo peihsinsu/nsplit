@@ -1,0 +1,19 @@
+{
+  "name": "nsplit",
+  "version": "0.0.1",
+  "description": "split text file by line with tmp folder, output folder and file close event",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "underscore": "~1.6.0",
+    "nomnom": "~1.8.0",
+    "lazy": "~1.0.11"
+  },
+	"bin": {
+		"nsplit": "./bin/nsplit"
+	}
+}
