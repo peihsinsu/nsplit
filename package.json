@@ -1,6 +1,6 @@
 {
   "name": "nsplit",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "split text file by line with tmp folder, output folder and file close event",
   "main": "index.js",
   "author": "",
