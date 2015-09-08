@@ -2,6 +2,7 @@
 var outfiles = {};
 var batch = 1;
 var max = 50;
+var exec = require('child_process').exec;
 
 var Lazy = require("lazy")
 	, fs = require('fs')
@@ -64,15 +65,17 @@ function dosplit(tmp, output, filename) {
 		.lines
 		.forEach(function(line){
 			line = line.toString();
-			var tmp_file = util.format('%s/%s.%s.%s', tmp, filename, batch,'tmp');
-			var out_file = util.format('%s/%s.%s', output, filename, batch);
+      var _filename = filename.split('/')[filename.split('/').length -1]
+			var tmp_file = util.format('%s/%s.%s.%s', tmp, _filename, batch,'tmp');
+			var out_file = util.format('%s/%s.%s', output, _filename, batch);
 
 			outfiles[tmp_file] = (outfiles[tmp_file]||0) + 1;
 			fs.appendFileSync(tmp_file, line + '\n');
 			if(outfiles[tmp_file] >= (opts.line || max)) {
 				fs.renameSync(tmp_file, out_file);
 				if(opts.callback) {
-					exec(opts.callback, function(err, stdo, stde) {
+          var cmd = opts.callback.replace(/\$file/g, out_file);
+					exec(cmd , function(err, stdo, stde) {
 						if(err) console.log(err);
 						if(stdo) console.log(stdo);
 						if(stde) console.log(stde);
@@ -82,15 +85,19 @@ function dosplit(tmp, output, filename) {
 				batch++;
 			}
 		}).on('pipe', function(){
-			var tmp_file = util.format('%s/%s.%s.%s', tmp, filename, batch,'tmp');
-			var out_file = util.format('%s/%s.%s', output, filename, batch);
+      var _filename = filename.split('/')[filename.split('/').length -1]
+			var tmp_file = util.format('%s/%s.%s.%s', tmp, _filename, batch,'tmp');
+			var out_file = util.format('%s/%s.%s', output, _filename, batch);
 			if(fs.existsSync(tmp_file)) {
 				console.log('Close:%s, idx:%s', tmp_file, outfiles[tmp_file]);
-				fs.renameSync(tmp_file, out_file);
+				fs.rename(tmp_file, out_file, function(err){
+          if(err) {
+            console.log('Rename file:%s error:', tmp_file, err);
+          } 
+        });
 			}
 			if(opts.exec) {
 				//close function
-				var exec = require('child_process').exec;
 				exec(opts.exec, function (error, stdout, stderr) {
 					if(error) 
 						console.log('[ERROR]', error);

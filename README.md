@@ -37,6 +37,22 @@ Full command parameters:
 nsplit -t /tmp/temp -o /tmp/output -l 300 -e 'echo done' sample.txt
 ```
 
+With each file cloud event:
+
+```
+nsplit -t /tmp/temp -o /tmp/output -l 300 -c 'echo this done file is:' -e 'echo done' sample.txt
+```
+
+Maybe you can integrate with cloud:
+
+```
+nsplit \
+  -t /tmp/temp -o /tmp/output \
+  -l 300 \
+  -c 'gzip $file && gsutil cp $file.gz gs://qnap-transfer/' \
+  -e 'echo done' sample.txt
+```
+
 Simple split:
 
 ```
